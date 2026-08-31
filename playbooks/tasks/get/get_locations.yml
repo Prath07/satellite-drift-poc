@@ -1,0 +1,15 @@
+---
+- name: TASK | Get current Locations from Satellite
+  redhat.satellite.resource_info:
+    username: "{{ satellite_username }}"
+    password: "{{ satellite_password }}"
+    server_url: "{{ satellite_url }}"
+    validate_certs: "{{ satellite_validate_certs }}"
+    resource: locations
+  register: current_locations_result
+  tags: 'locations'
+
+- name: TASK | Set current Locations fact
+  ansible.builtin.set_fact:
+    current_locations: "{{ current_locations_result.resources }}"
+  tags: 'locations'

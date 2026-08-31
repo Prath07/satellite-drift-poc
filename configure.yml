@@ -1,0 +1,12 @@
+---
+- name: Configure Satellite
+  hosts: localhost
+  become: false
+  gather_facts: false
+  vars_files:
+    - vars/lab_connection.yml
+    - vars/locations.yml
+  tasks:
+    - name: Configure Locations
+      ansible.builtin.include_tasks: playbooks/tasks/configure/configure_locations.yml
+      tags: 'locations'

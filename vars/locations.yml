@@ -1,0 +1,7 @@
+---
+locations:
+  - name: "Australia"
+  - name: "ACT"
+    parent: "Australia"
+  - name: "Belconnen"
+    parent: "Australia/ACT"

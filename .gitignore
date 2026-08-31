@@ -1,0 +1,10 @@
+# Contains real Satellite admin credentials - never commit this
+vars/lab_connection.yml
+
+# Ansible artifacts
+*.retry
+.ansible/
+
+# Common editor/OS junk
+.DS_Store
+*.swp

@@ -1,0 +1,16 @@
+---
+- name: TASK | Satellite ensure Locations
+  redhat.satellite.location:
+    username: "{{ satellite_username }}"
+    password: "{{ satellite_password }}"
+    server_url: "{{ satellite_url }}"
+    validate_certs: "{{ satellite_validate_certs }}"
+    state: present
+    name: "{{ item.name }}"
+    organizations:
+      - "{{ satellite_organization }}"
+    parent: "{{ item.parent | default(omit) }}"
+    description: "{{ item.description | default(omit) }}"
+  loop: "{{ locations }}"
+  register: location_task
+  tags: 'locations'

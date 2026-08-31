@@ -1,0 +1,61 @@
+---
+- name: BLOCK Cleanup Locations
+  tags: 'locations'
+  block:
+    - name: TASK | Get current Locations from Satellite
+      ansible.builtin.include_tasks: playbooks/tasks/get/get_locations.yml
+
+    - name: TASK | Compute desired Location titles (full hierarchy path)
+      ansible.builtin.set_fact:
+        desired_location_titles: "{{ desired_location_titles | default([]) + [computed_title] }}"
+      loop: "{{ locations }}"
+      loop_control:
+        loop_var: item
+      vars:
+        resolved_name: "{{ (location_name_mapping | default({})).get(item.name, item.name) }}"
+        resolved_parent: "{{ (location_name_mapping | default({})).get(item.parent, item.parent) if item.parent is defined else '' }}"
+        computed_title: "{{ resolved_parent ~ ((item.parent is defined) | ternary('/', '')) ~ resolved_name }}"
+
+    - name: TASK | Determine orphaned Locations (in Satellite, not in yaml)
+      ansible.builtin.set_fact:
+        orphaned_locations: "{{ current_locations
+          | rejectattr('title', 'in', desired_location_titles)
+          | rejectattr('title', 'in', protected_locations | default([]))
+          | list }}"
+
+    - name: TASK | Report orphaned Locations (dry run)
+      ansible.builtin.debug:
+        msg: "Would remove Location: {{ item.title }} (id: {{ item.id }})"
+      loop: "{{ orphaned_locations }}"
+      loop_control:
+        label: "{{ item.title }}"
+      when: not cleanup_apply_changes | default(false)
+
+    - name: TASK | Remove orphaned Locations
+      redhat.satellite.location:
+        username: "{{ satellite_username }}"
+        password: "{{ satellite_password }}"
+        server_url: "{{ satellite_url }}"
+        validate_certs: "{{ satellite_validate_certs }}"
+        state: absent
+        name: "{{ item.name }}"
+        parent: "{{ item.parent_name | default(omit) }}"
+      loop: "{{ orphaned_locations }}"
+      loop_control:
+        label: "{{ item.title }}"
+      when: cleanup_apply_changes | default(false)
+      register: location_delete_result
+      failed_when: false
+
+    - name: TASK | Note any failed removals (likely dependency-blocked)
+      ansible.builtin.debug:
+        msg: "Failed to remove {{ item.item.title }}: {{ item.msg | default('unknown error') }} (may resolve on a future run once dependency is cleared)"
+      loop: "{{ location_delete_result.results | default([]) }}"
+      loop_control:
+        label: "{{ item.item.title | default('unknown') }}"
+      when: cleanup_apply_changes | default(false) and item is failed
+
+  rescue:
+    - name: TASK | Log Location cleanup failure and continue
+      ansible.builtin.debug:
+        msg: "Cleanup of Locations failed entirely this run, will retry next run: {{ ansible_failed_result.msg | default('unknown error') }}"
