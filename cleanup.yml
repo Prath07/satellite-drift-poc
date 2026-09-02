@@ -8,9 +8,9 @@
     - vars/locations.yml
     - vars/mappings/locations.yml
   vars:
-    cleanup_apply_changes: false   # dry-run by default; override with -e cleanup_apply_changes=true
+    cleanup_apply_changes: false   # -e cleanup_apply_changes=true to delete changes
     protected_locations:
-      - "Default Location"         # Satellite built-in default, never delete
+      - "Default Location"         
   tasks:
     - name: Cleanup Locations
       ansible.builtin.include_tasks: playbooks/tasks/cleanup/cleanup_locations.yml
